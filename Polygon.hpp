@@ -4,32 +4,30 @@
 #include <iostream>
 #include "Shape.hpp"
 #include "Point.hpp"
-#include "ArrayList.hpp"
 
 class Polygon : public Shape {
 public:
 
-	explicit Polygon()
-	{
-		points_ = ArrayList<Point>();
-	}
+	explicit Polygon(size_t numberVertices, Point* points):
+		numberVertices_(numberVertices),
+		points_(points)
+	{ }
 
 	explicit Polygon(std::istream& is) {
-		size_t numberVertices;
-		is >> numberVertices;
-		points_ = ArrayList<Point>(numberVertices);
+		is >> numberVertices_;
+		points_ = new Point[numberVertices_];
 		Point point;
-		for (size_t i = 0; i < numberVertices; ++i) {
+		for (size_t i = 0; i < numberVertices_; ++i) {
 			is >> point;
-			addNextVertex(point);
+			points_[i] = point;
 		}
 	}
 
-	void addNextVertex(const Point& point) {
-		points_.add(point);
+	~Polygon() override {
+		delete[] points_;
 	}
 
-	Point* getPointsArray() const;
+	size_t getNumberVertices() const;
 
 	double calcArea() const override;
 
@@ -38,7 +36,8 @@ public:
 	std::string name() const override;
 
 private:
-	ArrayList<Point> points_;
+	size_t numberVertices_;
+	Point* points_;
 };
 
 #endif
