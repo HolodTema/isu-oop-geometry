@@ -10,6 +10,8 @@ struct Point {
 		y(y)
 	{ }
 
+	double distanceTo(const Point& other) const;
+
 	double x;
 	double y;
 };

@@ -1,6 +1,15 @@
 #include "Point.hpp"
 #include <iostream>
 
+#include <cmath>
+
+double Point::distanceTo(const Point& other) const {
+	double distanceX = x - other.x;
+	double distanceY = y - other.y;
+	return std::sqrt(distanceX * distanceX + distanceY * distanceY);
+}
+
+
 std::istream& operator>>(std::istream& is, Point& point) {
 	std::istream::sentry s(is);
 	if (!s) {

@@ -14,11 +14,7 @@ public:
 
 	virtual double calcPerimeter() const = 0;
 
-	virtual char* name() const = 0;
-
-private:
-	std::string name_;
-
+	virtual std::string name() const = 0;
 };
 
 #endif
