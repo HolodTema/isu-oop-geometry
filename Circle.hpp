@@ -2,6 +2,7 @@
 #define CIRCLE_HPP
 
 #include <cmath>
+#include <stdexcept>
 #include "Point.hpp"
 #include "Shape.hpp"
 
@@ -9,8 +10,12 @@ class Circle : public Shape {
 public:
 
 	Circle(const Point& center, double radius):
-		center_(center),
-		radius_(radius) {
+		center_(center)
+	{
+		if (radius <= 0) {
+			throw std::invalid_argument("Error: radius must be > 0.");
+		}
+		radius_ = radius;
 	}
 
 	Point getCenter() const;

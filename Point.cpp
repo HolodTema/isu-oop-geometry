@@ -9,6 +9,9 @@ double Point::distanceTo(const Point& other) const {
 	return std::sqrt(distanceX * distanceX + distanceY * distanceY);
 }
 
+bool Point::operator==(const Point& other) const {
+	return x == other.x && y == other.y;
+}
 
 std::istream& operator>>(std::istream& is, Point& point) {
 	std::istream::sentry s(is);

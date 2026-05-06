@@ -2,10 +2,25 @@
 
 #include <cmath>
 
+// point1 - point2
+double Triangle::getFirstEdgeLen() const {
+	return firstPoint_.distanceTo(secondPoint_);
+}
+
+// point2 - point3
+double Triangle::getSecondEdgeLen() const {
+	return secondPoint_.distanceTo(thirdPoint_);
+}
+
+// point3 - point1
+double Triangle::getThirdEdgeLen() const {
+	return thirdPoint_.distanceTo(firstPoint_);
+}
+
 double Triangle::calcArea() const {
-	double firstEdge = firstPoint_.distanceTo(secondPoint_);
-	double secondEdge = secondPoint_.distanceTo(thirdPoint_);
-	double thirdEdge = thirdPoint_.distanceTo(firstPoint_);
+	double firstEdge = getFirstEdgeLen();
+	double secondEdge = getSecondEdgeLen();
+	double thirdEdge = getThirdEdgeLen();
 
 	double p = (firstEdge + secondEdge + thirdEdge) / 2.0;
 
@@ -13,10 +28,9 @@ double Triangle::calcArea() const {
 }
 
 double Triangle::calcPerimeter() const {
-	double firstEdge = firstPoint_.distanceTo(secondPoint_);
-	double secondEdge = secondPoint_.distanceTo(thirdPoint_);
-	double thirdEdge = thirdPoint_.distanceTo(firstPoint_);
-
+	double firstEdge = getFirstEdgeLen();
+	double secondEdge = getSecondEdgeLen();
+	double thirdEdge = getThirdEdgeLen();
 	return firstEdge + secondEdge + thirdEdge;
 }
 

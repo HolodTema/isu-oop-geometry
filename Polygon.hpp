@@ -2,6 +2,7 @@
 #define POLYGON_HPP
 
 #include <iostream>
+#include <vector>
 #include "Shape.hpp"
 #include "Point.hpp"
 

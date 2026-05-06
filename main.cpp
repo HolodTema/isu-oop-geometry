@@ -17,6 +17,7 @@ void testPolygonFromFile() {
 	if (ifs) {
 		std::cout << "Polygon created from file successfully!\n";
 		std::cout << "Number of vertices = " << polygon.getNumberVertices() << "\n";
+		std::cout << "Polygon area = " << polygon.calcArea() << "\n";
 	}
 	else {
 		std::cout << "Error: std::istream object set badbit or failbit during reading Polygon.\n";

@@ -17,6 +17,8 @@ struct Point {
 
 	double distanceTo(const Point& other) const;
 
+	bool operator==(const Point& other) const;
+
 	double x;
 	double y;
 };

@@ -13,6 +13,15 @@ public:
 		thirdPoint_(third)
 	{ }
 
+	// point1 - point2
+	double getFirstEdgeLen() const;
+
+	// point2 - point3
+	double getSecondEdgeLen() const;
+
+	// point3 - point1
+	double getThirdEdgeLen() const;
+
 	double calcArea() const override;
 
 	double calcPerimeter() const override;
