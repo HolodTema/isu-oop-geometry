@@ -1,120 +1,132 @@
 #include "shapeRecognition.hpp"
+#include <unordered_set>
 #include "Polygon.hpp"
 
-bool isPointInContour(size_t width, size_t height, const std::vector<bool>& allPoints, const Point& point) {
+// bool isPointInContour(size_t width, size_t height, const std::vector<bool>& allPoints, const Point& point) {
+// 	int x = static_cast<int>(point.x);
+// 	int y = static_cast<int>(point.y);
+//
+// 	if (x < 0 || x >= width || y < 0 || y >= height) {
+// 		return false;
+// 	}
+// 	if (!allPoints[y * width + x]) {
+// 		return false;
+// 	}
+// 	bool rightEmpty = (x - 1 < 0) || !allPoints[y * width + x - 1];
+// 	bool leftEmpty = (x + 1 >= width) || !allPoints[y * width + x + 1];
+// 	bool topEmpty = (y - 1 < 0) || !allPoints[(y - 1) * width + x];
+// 	bool bottomEmpty = (y + 1 >= height) || !allPoints[(y + 1) * width + x];
+// 	return rightEmpty || leftEmpty || topEmpty || bottomEmpty;
+// }
+
+bool isPointInContour(size_t width, size_t height,
+					  const std::vector<bool>& allPoints,
+					  const Point& point) {
 	int x = static_cast<int>(point.x);
 	int y = static_cast<int>(point.y);
+
+	// Сначала проверяем границы
+	if (x < 0 || x >= static_cast<int>(width) ||
+		y < 0 || y >= static_cast<int>(height)) {
+		return false;
+		}
+
 	if (!allPoints[y * width + x]) {
 		return false;
 	}
-	bool hasRightNeighbour = (x - 1 >= 0) && allPoints[y * width + x - 1];
-	bool hasLeftNeighbour = (x + 1 < width) && allPoints[y * width + x + 1];
-	bool hasTopNeighbour = (y - 1 >= 0) && allPoints[(y - 1) * width + x];
-	bool hasBottomNeighbour = (y + 1 < height) && allPoints[(y + 1) * width + x];
-	if (hasBottomNeighbour && hasLeftNeighbour && hasTopNeighbour && hasRightNeighbour) {
-		return false;
-	}
-	return (hasBottomNeighbour && hasLeftNeighbour) ||
-		   (hasBottomNeighbour && hasRightNeighbour) ||
-		   (hasLeftNeighbour && hasTopNeighbour) ||
-		   (hasRightNeighbour && hasTopNeighbour);
+
+	// Проверяем 4-х соседей (с учётом границ)
+	bool leftEmpty  = (x == 0) || !allPoints[y * width + (x - 1)];
+	bool rightEmpty = (x == static_cast<int>(width) - 1) || !allPoints[y * width + (x + 1)];
+	bool topEmpty   = (y == 0) || !allPoints[(y - 1) * width + x];
+	bool bottomEmpty = (y == static_cast<int>(height) - 1) || !allPoints[(y + 1) * width + x];
+
+	return leftEmpty || rightEmpty || topEmpty || bottomEmpty;
 }
 
-void findShapeContourRecursive(
+std::vector<Point> findShapeContour(
 	size_t width,
 	size_t height,
-	const std::vector<bool> &allPoints,
-	std::vector<Point> &vecContour,
-	std::unordered_set<Point, PointHash> &setVisitedPoints,
-	const Point &point
-) {
-	int x = point.x;
-	int y = point.y;
-
-	if (setVisitedPoints.find(point) != setVisitedPoints.end()) {
-		return;
+	const std::vector<bool>& allPoints,
+	const Point& pointStart)
+{
+	// если стартовая точка не является контурной, то зачем мы вообще вызвали эту
+	// функцию? Выходим.
+	if (!isPointInContour(width, height, allPoints, pointStart)) {
+		return std::vector<Point>();
 	}
 
-	vecContour.push_back(point);
-	setVisitedPoints.insert(point);
+	// 8 направлений по индексам. Начиная от right, заканчивая topRight
+	// то есть по часовой стрелке.
+	int xDirections[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+	int yDirections[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 
-	if (x + 1 < width) {
-		Point pointRight = Point(x + 1, y);
-		if (isPointInContour(width, height, allPoints, pointRight)) {
-			if (setVisitedPoints.find(pointRight) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointRight);
-				return;
+	int currX = static_cast<int>(pointStart.x);
+	int currY = static_cast<int>(pointStart.y);
+
+	// индекс первого направления, где есть контур по часовой стрелке.
+	int firstClockwiseDir = -1;
+	for (int dirIndex = 0; dirIndex < 8; dirIndex++) {
+		int x = currX + xDirections[dirIndex];
+		int y = currY + yDirections[dirIndex];
+		if (isPointInContour(width, height, allPoints, Point(x, y))) {
+			firstClockwiseDir = dirIndex;
+			break;
+		}
+	}
+
+	// если такого направления по часовой стрелке не нашлось, то мы
+	// имеем дело с одинокой точкой - это не фигура
+	if (firstClockwiseDir == -1) {
+		return std::vector<Point>();
+	}
+
+	std::vector<Point> vecContour;
+	vecContour.push_back(pointStart);
+
+	// переходим к найденной нами ранее соседней контурной точке
+	currX += xDirections[firstClockwiseDir];
+	currY += yDirections[firstClockwiseDir];
+
+	// prevDirection - направление, чтобы вернуться в предыдущую точку.
+	int prevDirection = (firstClockwiseDir + 4) % 8;
+
+	// итерируемся, пока не вернулись в начальную точку (пока не замкнули контур)
+	while (currX != pointStart.x || currY != pointStart.y) {
+		vecContour.push_back(Point(currX, currY));
+
+		// ищем следующую контурную точку по часовой стрелке от предыдущего направления
+		int nextDirection = -1;
+		for (int i = 0; i < 8; ++i) {
+			int dir = (prevDirection + 7 + i) % 8;
+			if (dir == prevDirection) {
+				// нам нет смысла возвращаться назад в предыдущую контурную точку - мы ее уже учли.
+				continue;
+			}
+			int x = currX + xDirections[dir];
+			int y = currY + yDirections[dir];
+			if (isPointInContour(width, height, allPoints, Point(x, y))) {
+				nextDirection = dir;
+				break;
 			}
 		}
 
-	}
-	if (x - 1 >= 0) {
-		Point pointLeft = Point(x - 1, y);
-		if (isPointInContour(width, height, allPoints, pointLeft)) {
-			if (setVisitedPoints.find(pointLeft) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointLeft);
-				return;
-			}
+		// если новая контурная точка не нашлась - текущая точка тупиковая, контур окончен
+		if (nextDirection == -1) {
+			break;
 		}
+
+		// переходим к новой найденной точке, снова запоминаем направление к предыдущей точке
+		currX += xDirections[nextDirection];
+		currY += yDirections[nextDirection];
+		prevDirection = (nextDirection + 4) % 8;
 	}
-	if (y - 1 >= 0) {
-		Point pointTop = Point(x, y - 1);
-		if (isPointInContour(width, height, allPoints, pointTop)) {
-			if (setVisitedPoints.find(pointTop) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointTop);
-				return;
-			}
-		}
-	}
-	if (y + 1 < height) {
-		Point pointBottom = Point(x, y + 1);
-		if (isPointInContour(width, height, allPoints, pointBottom)) {
-			if (setVisitedPoints.find(pointBottom) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointBottom);
-				return;
-			}
-		}
-	}
-	if (x - 1 >= 0 && y - 1 >= 0) {
-		Point pointTopLeft = Point(x - 1, y - 1);
-		if (isPointInContour(width, height, allPoints, pointTopLeft)) {
-			if (setVisitedPoints.find(pointTopLeft) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointTopLeft);
-				return;
-			}
-		}
-	}
-	if (x - 1 >= 0 && y + 1 < height) {
-		Point pointBottomLeft = Point(x - 1, y + 1);
-		if (isPointInContour(width, height, allPoints, pointBottomLeft)) {
-			if (setVisitedPoints.find(pointBottomLeft) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointBottomLeft);
-				return;
-			}
-		}
-	}
-	if (x + 1 < width && y - 1 >= 0) {
-		Point pointTopRight = Point(x + 1, y - 1);
-		if (isPointInContour(width, height, allPoints, pointTopRight)) {
-			if (setVisitedPoints.find(pointTopRight) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointTopRight);
-				return;
-			}
-		}
-	}
-	if (x + 1 < width && y + 1 < height) {
-		Point pointBottomRight = Point(x + 1, y + 1);
-		if (isPointInContour(width, height, allPoints, pointBottomRight)) {
-			if (setVisitedPoints.find(pointBottomRight) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointBottomRight);
-				return;
-			}
-		}
-	}
+
+	return vecContour;
 }
 
 void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t height) {
-	size_t amountSquares = 0;
+	size_t amountRectangles = 0;
 	size_t amountTriangles = 0;
 	size_t amountEllipses = 0;
 
@@ -133,44 +145,39 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 		return;
 	}
 
-	std::unordered_set<Point, PointHash> setVisitedPoints(width * height);
+	std::unordered_set<Point, PointHash> setVisitedPoints;
 
 	for (size_t y = 0; y < height; ++y) {
 		for (size_t x = 0; x < width; ++x) {
-			Point point = Point(x, y);
-			std::vector<Point> vecContour;
-			if (isPointInContour(width, height, allPoints, point)) {
-				if (setVisitedPoints.find(point) == setVisitedPoints.end()) {
-					findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, point);
-					os << "after finding amount vertices = " << vecContour.size() << "\n";
-					for (Point p : vecContour) {
-						os << p << " ";
-					}
-					os << "\n";
-					if (vecContour.size() < 3) {
-						os << "Cannot create polygon from < 3 vertices. Skip this figure.\n";
-						continue;
-					}
-					Polygon polygon(vecContour);
+			Point point(x, y);
+			os << point << " ";
+			if (isPointInContour(width, height, allPoints, point) && setVisitedPoints.find(point) == setVisitedPoints.end()) {
+				std::vector<Point> vecContour = findShapeContour(width, height, allPoints, point);
+				if (vecContour.size() < 3) {
+					continue;
+				}
 
-					size_t verticesOptimized = polygon.approximateVertices();
-					if (polygon.getNumberVertices() > 4) {
-						amountEllipses++;
-					}
-					if (polygon.getNumberVertices() == 4) {
-						amountSquares++;
-					}
-					if (polygon.getNumberVertices() == 3) {
-						amountTriangles++;
-					}
-					os << "optimized: " << verticesOptimized << "\n";
-					os << "vertices left " << polygon.getNumberVertices() << "\n";
-					os << "------------------\n\n";
+				for (auto it = vecContour.begin(); it != vecContour.end(); ++it) {
+					setVisitedPoints.insert(*it);
+				}
+
+				Polygon polygon(vecContour);
+				polygon.approximateVertices();
+				size_t amountVertices = polygon.getNumberVertices();
+
+				if (amountVertices > 4) {
+					amountEllipses++;
+				}
+				else if (amountVertices == 4) {
+					amountRectangles++;
+				}
+				else if (amountVertices == 3) {
+					amountTriangles++;
 				}
 			}
 		}
 	}
 	os << "Ellipses = " << amountEllipses << "\n";
-	os << "Squares = " << amountSquares << "\n";
+	os << "Rectangles = " << amountRectangles << "\n";
 	os << "Triangles = " << amountTriangles << "\n";
 }
