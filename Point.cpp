@@ -31,3 +31,9 @@ std::ostream& operator<<(std::ostream& os, const Point& point) {
 	os << "(" << point.x << ", " << point.y << ")";
 	return os;
 }
+
+size_t PointHash::operator()(const Point& point) const {
+	size_t hashX = std::hash<double>{}(point.x);
+	size_t hashY = std::hash<double>{}(point.y);
+	return hashX ^ (hashY << 1);
+}

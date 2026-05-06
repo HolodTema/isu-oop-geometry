@@ -1,17 +1,30 @@
 #include "Polygon.hpp"
 
-
-size_t Polygon::getNumberVertices() const {
-	return numberVertices_;
+void Polygon::addVertexToEnd(const Point& point) {
+	vecPoints_.push_back(point);
 }
 
+size_t Polygon::getNumberVertices() const {
+	return vecPoints_.size();
+}
 
 double Polygon::calcArea() const {
-	double result = 0;
-	for (size_t i = 0; i < numberVertices_ - 1; ++i) {
-		result += points_[i].x * points_[i+1].y - points_[i+1].x * points_[i].y;
+	auto it = vecPoints_.begin();
+	if (it == vecPoints_.end()) {
+		return 0;
 	}
-	result += points_[numberVertices_ - 1].x * points_[0].y - points_[0].x * points_[numberVertices_ - 1].y;
+
+	++it;
+	double result = 0;
+	for (; it != vecPoints_.end(); ++it) {
+		Point currPoint = *it;
+		Point prevPoint = *(it - 1);
+		result += prevPoint.x * currPoint.y - currPoint.x * prevPoint.y;
+	}
+
+	Point endPoint = *(vecPoints_.end() - 1);
+	Point startPoint = *(vecPoints_.begin());
+	result += startPoint.x * endPoint.y - endPoint.x * startPoint.y;
 
 	if (result < 0) {
 		result *= -1;
@@ -21,11 +34,22 @@ double Polygon::calcArea() const {
 }
 
 double Polygon::calcPerimeter() const {
-	double result = 0;
-	for (size_t i = 0; i < numberVertices_ - 1; ++i) {
-		result += points_[i].distanceTo(points_[i+1]);
+	auto it = vecPoints_.begin();
+	if (it == vecPoints_.end()) {
+		return 0;
 	}
-	result += points_[0].distanceTo(points_[numberVertices_ - 1]);
+
+	++it;
+	double result = 0;
+	for (; it != vecPoints_.end(); ++it) {
+		Point currPoint = *it;
+		Point prevPoint = *(it - 1);
+		result += prevPoint.distanceTo(currPoint);
+	}
+
+	Point endPoint = *(vecPoints_.end() - 1);
+	Point startPoint = *(vecPoints_.begin());
+	result += startPoint.distanceTo(endPoint);
 	return result;
 }
 

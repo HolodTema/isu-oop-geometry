@@ -9,24 +9,39 @@
 class Polygon : public Shape {
 public:
 
-	explicit Polygon(size_t numberVertices, Point* points):
-		numberVertices_(numberVertices),
-		points_(points)
-	{ }
+	explicit Polygon(const std::vector<Point>& vecPoints) {
+		if (vecPoints.size() < 3) {
+			throw std::invalid_argument("Error: polygon must have at least 3 vertices.");
+		}
+		vecPoints_ = vecPoints;
+	}
 
-	explicit Polygon(std::istream& is) {
-		is >> numberVertices_;
-		points_ = new Point[numberVertices_];
-		Point point;
-		for (size_t i = 0; i < numberVertices_; ++i) {
-			is >> point;
-			points_[i] = point;
+	explicit Polygon(size_t numberVertices, Point* points)
+	{
+		if (numberVertices < 3) {
+			throw std::invalid_argument("Error: polygon must have at least 3 vertices.");
+		}
+		vecPoints_.reserve(numberVertices);
+		for (size_t i = 0; i < numberVertices; i++) {
+			vecPoints_.push_back(points[i]);
 		}
 	}
 
-	~Polygon() override {
-		delete[] points_;
+	explicit Polygon(std::istream& is) {
+		size_t amountPoints;
+		is >> amountPoints;
+		if (amountPoints < 3) {
+			throw std::invalid_argument("Error: polygon must have at least 3 vertices.");
+		}
+		vecPoints_.reserve(amountPoints);
+		Point point;
+		for (size_t i = 0; i < amountPoints; ++i) {
+			is >> point;
+			vecPoints_.push_back(point);
+		}
 	}
+
+	void addVertexToEnd(const Point& point);
 
 	size_t getNumberVertices() const;
 
@@ -37,8 +52,8 @@ public:
 	std::string name() const override;
 
 private:
-	size_t numberVertices_;
-	Point* points_;
+	std::vector<Point> vecPoints_;
+
 };
 
 #endif

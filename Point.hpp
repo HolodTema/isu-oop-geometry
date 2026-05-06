@@ -23,6 +23,10 @@ struct Point {
 	double y;
 };
 
+struct PointHash {
+	size_t operator()(const Point& point) const;
+};
+
 std::istream& operator>>(std::istream& is, Point& point);
 
 std::ostream& operator<<(std::ostream& os, const Point& point);
