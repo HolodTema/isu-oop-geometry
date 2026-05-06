@@ -9,18 +9,33 @@ size_t Polygon::getNumberVertices() const {
 }
 
 size_t Polygon::approximateVertices() {
-	size_t amountApproximatedVertices = 0;
-	for (size_t i = 0; i < vecPoints_.size() - 2; ++i) {
-		Point p1 = vecPoints_[i];
-		Point p2 = vecPoints_[i+1];
-		Point p3 = vecPoints_[i+2];
-		if (p1.isOnStraightLineWith(p2, p3)) {
-			vecPoints_.erase(vecPoints_.begin() + i + 1);
-			i --;
-			amountApproximatedVertices++;
+	if (vecPoints_.size() < 3) return 0;
+
+	std::vector<Point> vecSimplifiedVertices;
+	size_t n = vecPoints_.size();
+
+	for (size_t i = 0; i < n; ++i) {
+		// используем остаток от делелния на длину, чтобы не заморачиваться с outOfBounds
+		// и чтобы проверять тройки точек в начале и конце вектора.
+		const Point& prev = vecPoints_[(i - 1 + n) % n];
+		const Point& curr = vecPoints_[i];
+		const Point& next = vecPoints_[(i + 1) % n];
+
+		if (!prev.isOnStraightLineWith(curr, next)) {
+			vecSimplifiedVertices.push_back(curr);
 		}
 	}
-	return amountApproximatedVertices;
+
+	// если апроксимация сделала многоугольник вырожденным - отменяем апроксимацию вообще.
+	if (vecSimplifiedVertices.size() < 3) {
+		return 0;
+	}
+
+	size_t amountRemovedVertices = vecPoints_.size() - vecSimplifiedVertices.size();
+	// std::move() позволяет избежать лишнее перекопирование из vecSimplifiedVertices в vecPoints - вместо
+	// этого сработает оператор перемещающего присваивания.
+	vecPoints_ = std::move(vecSimplifiedVertices);
+	return amountRemovedVertices;
 }
 
 double Polygon::calcArea() const {

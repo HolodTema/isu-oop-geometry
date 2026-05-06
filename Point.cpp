@@ -1,6 +1,6 @@
 #include "Point.hpp"
 #include <iostream>
-
+#include <functional>
 #include <cmath>
 
 double Point::distanceTo(const Point& other) const {
@@ -10,9 +10,7 @@ double Point::distanceTo(const Point& other) const {
 }
 
 bool Point::isOnStraightLineWith(const Point& point2, const Point& point3) const {
-	double k1 = (point2.y - y) / (point2.x - x);
-	double k2 = (point3.y - point2.y) / (point3.x - point2.x);
-	return k1 == k2;
+	return (point2.y - y) * (point3.x - point2.x) == (point3.y - point2.y) * (point2.x - x);
 }
 
 bool Point::operator==(const Point& other) const {
@@ -41,5 +39,6 @@ std::ostream& operator<<(std::ostream& os, const Point& point) {
 size_t PointHash::operator()(const Point& point) const {
 	size_t hashX = std::hash<double>{}(point.x);
 	size_t hashY = std::hash<double>{}(point.y);
-	return hashX ^ (hashY << 1);
+	return hashX ^ (hashY * 0x9e3779b9 + (hashX << 6) + (hashX >> 2));
+	// return hashX ^ (hashY << 1);
 }

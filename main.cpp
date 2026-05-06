@@ -56,12 +56,12 @@ int main() {
 	// testPolygonFromFile();
 	// testPolygon();
 
-	std::ifstream ifs("./assets/input1.dat");
+	std::ifstream ifs("./assets/input2.dat");
 	if (!ifs.is_open()) {
 		std::cout << "Error: no file input1.dat.\n";
 		return 1;
 	}
 
-	recognizeShapes(ifs, std::cout, 700, 700);
+	recognizeShapes(ifs, std::cout, 200, 200);
 	return 0;
 }

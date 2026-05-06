@@ -11,7 +11,7 @@ TARGET = main
 
 
 # source c++ files
-SOURCES = main.cpp Point.cpp Circle.cpp Ellipse.cpp Rectangle.cpp Triangle.cpp Polygon.cpp
+SOURCES = main.cpp Point.cpp Circle.cpp Ellipse.cpp Rectangle.cpp Triangle.cpp Polygon.cpp shapeRecognition.cpp
 
 
 # default makefile rule
