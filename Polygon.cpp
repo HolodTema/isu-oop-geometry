@@ -8,6 +8,21 @@ size_t Polygon::getNumberVertices() const {
 	return vecPoints_.size();
 }
 
+size_t Polygon::approximateVertices() {
+	size_t amountApproximatedVertices = 0;
+	for (size_t i = 0; i < vecPoints_.size() - 2; ++i) {
+		Point p1 = vecPoints_[i];
+		Point p2 = vecPoints_[i+1];
+		Point p3 = vecPoints_[i+2];
+		if (p1.isOnStraightLineWith(p2, p3)) {
+			vecPoints_.erase(vecPoints_.begin() + i + 1);
+			i --;
+			amountApproximatedVertices++;
+		}
+	}
+	return amountApproximatedVertices;
+}
+
 double Polygon::calcArea() const {
 	auto it = vecPoints_.begin();
 	if (it == vecPoints_.end()) {

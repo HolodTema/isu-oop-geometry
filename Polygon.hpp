@@ -45,6 +45,8 @@ public:
 
 	size_t getNumberVertices() const;
 
+	size_t approximateVertices();
+
 	double calcArea() const override;
 
 	double calcPerimeter() const override;

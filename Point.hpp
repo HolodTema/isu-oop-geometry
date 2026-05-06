@@ -17,6 +17,8 @@ struct Point {
 
 	double distanceTo(const Point& other) const;
 
+	bool isOnStraightLineWith(const Point& point2, const Point& point3) const;
+
 	bool operator==(const Point& other) const;
 
 	double x;

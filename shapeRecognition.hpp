@@ -7,63 +7,79 @@
 #include "Point.hpp"
 #include "Polygon.hpp"
 
-static bool isPointInContour(size_t width, size_t height, bool* allPoints, const Point& point) {
-	if (!allPoints[point.y * width + point.x]) {
+bool isPointInContour(size_t width, size_t height, bool* allPoints, const Point& point) {
+	int x = point.x;
+	int y = point.y;
+	if (!allPoints[y * width + x]) {
 		return false;
 	}
-	bool hasRightNeighbour = (point.x - 1 >= 0) && allPoints[point.y * width + point.x - 1];
-	bool hasLeftNeighbour = (point.x + 1 < width) && allPoints[point.y * width + point.x + 1];
-	bool hasTopNeighbour = (point.y - 1 >= 0) && allPoints[(point.y - 1) * width + point.x];
-	bool hasBottomNeighbour = (point.y + 1 < height) && allPoints[(point.y + 1) * width + point.x];
-
+	bool hasRightNeighbour = (x - 1 >= 0) && allPoints[y * width + x - 1];
+	bool hasLeftNeighbour = (x + 1 < width) && allPoints[y * width + x + 1];
+	bool hasTopNeighbour = (y - 1 >= 0) && allPoints[(y - 1) * width + x];
+	bool hasBottomNeighbour = (y + 1 < height) && allPoints[(y + 1) * width + x];
 	return (hasBottomNeighbour && hasLeftNeighbour) ||
 		   (hasBottomNeighbour && hasRightNeighbour) ||
 		   (hasLeftNeighbour && hasTopNeighbour) ||
 		   (hasRightNeighbour && hasTopNeighbour);
 }
 
-static void findShapeContourRecursive(
+void findShapeContourRecursive(
 	size_t width,
 	size_t height,
 	bool* allPoints,
-	std::vector<Point> &vecContour,
-    std::unordered_set<Point, PointHash> &setVisitedPoints,
-	const Point &point
+	std::vector<Point>& vecContour,
+    std::unordered_set<Point, PointHash>& setVisitedPoints,
+	const Point& point
 ) {
-	bool value = allPoints[point.y * width + point.x];
-	if (!value) {
-		return;
-	}
-	if (setVisitedPoints.find(point) == setVisitedPoints.end()) {
+	int x = point.x;
+	int y = point.y;
+
+	if (setVisitedPoints.find(point) != setVisitedPoints.end()) {
 		return;
 	}
 
 	setVisitedPoints.insert(point);
 
-	if (isPointInContour(width, height, allPoints, point)) {
-		vecContour.push_back(point);
+	if (x < width - 1) {
+		Point pointRight = Point(x + 1, y);
+		if (isPointInContour(width, height, allPoints, pointRight)) {
+			vecContour.push_back(pointRight);
+			findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointRight);
+			return;
+		}
 	}
-
-	if (point.x > 0) {
-		findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, Point(point.x - 1, point.y));
+	if (x > 0) {
+		Point pointLeft = Point(x - 1, y);
+		if (isPointInContour(width, height, allPoints, pointLeft)) {
+			vecContour.push_back(pointLeft);
+			findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointLeft);
+			return;
+		}
 	}
-	if (point.x < width - 1) {
-		findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, Point(point.x + 1, point.y));
+	if (y > 0) {
+		Point pointTop = Point(x, y - 1);
+		if (isPointInContour(width, height, allPoints, pointTop)) {
+			vecContour.push_back(pointTop);
+			findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointTop);
+			return;
+		}
 	}
-	if (point.y > 0) {
-		findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, Point(point.x, point.y - 1));
-	}
-	if (point.y < height - 1) {
-		findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, Point(point.x, point.y + 1));
+	if (y < height - 1) {
+		Point pointBottom = Point(x, y + 1);
+		if (isPointInContour(width, height, allPoints, pointBottom)) {
+			vecContour.push_back(pointBottom);
+			findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, pointBottom);
+			return;
+		}
 	}
 }
 
 void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t height) {
 	bool *allPoints = new bool[width * height];
-	int pointValue = 0;
+	bool pointValue = false;
 	for (size_t i = 0; i < width * height; ++i) {
 		is >> pointValue;
-		allPoints[i] = pointValue == 1;
+		allPoints[i] = pointValue;
 	}
 
 	std::unordered_set<Point, PointHash> setVisitedPoints(width * height);
@@ -73,9 +89,18 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 			bool value = allPoints[y * width + x];
 			Point point = Point(x, y);
 			std::vector<Point> vecContour;
-			if (value && setVisitedPoints.find(point) == setVisitedPoints.end()) {
-				findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, point);
-
+			if (value) {
+				if (isPointInContour(width, height, allPoints, point)) {
+					if (setVisitedPoints.find(point) == setVisitedPoints.end()) {
+						vecContour.push_back(point);
+						findShapeContourRecursive(width, height, allPoints, vecContour, setVisitedPoints, point);
+						Polygon polygon(vecContour);
+						size_t amountApproximatedVertices = polygon.approximateVertices();
+						os << "optimized: " << amountApproximatedVertices << "\n";
+						os << "vertices left " << polygon.getNumberVertices() << "\n";
+						os << "------------------\n\n";
+					}
+				}
 			}
 		}
 	}

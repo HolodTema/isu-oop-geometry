@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include "Polygon.hpp"
+#include "shapeRecognition.hpp"
 
 void testPolygon() {
 	std::vector<Point> vecPoints = {Point(0,0), Point(3,0), Point(0,4)};
@@ -53,6 +54,14 @@ void testPolygonFromFile() {
 
 int main() {
 	// testPolygonFromFile();
-	testPolygon();
+	// testPolygon();
+
+	std::ifstream ifs("./assets/input1.dat");
+	if (!ifs.is_open()) {
+		std::cout << "Error: no file input1.dat.\n";
+		return 1;
+	}
+
+	recognizeShapes(ifs, std::cout, 700, 700);
 	return 0;
 }
