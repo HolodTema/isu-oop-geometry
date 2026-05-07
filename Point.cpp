@@ -10,7 +10,18 @@ double Point::distanceTo(const Point& other) const {
 }
 
 bool Point::isOnStraightLineWith(const Point& point2, const Point& point3) const {
+	// векторное произведение векторов в координатах
 	return (point2.y - y) * (point3.x - point2.x) == (point3.y - point2.y) * (point2.x - x);
+}
+
+bool Point::isOnStraightLineWith(const Point& point2, const Point& point3, double accuracy) const {
+	// векторное произведение векторов в координатах
+	double vectorMultiply = (point2.x - x) * (point3.y - point2.y) - (point3.x - point2.x) * (point2.y - y);
+	if (vectorMultiply < 0) {
+		vectorMultiply *= -1;
+	}
+	std::cout << vectorMultiply << " ";
+	return vectorMultiply <= accuracy;
 }
 
 bool Point::operator==(const Point& other) const {

@@ -21,31 +21,6 @@ bool isPointInContour(size_t width, size_t height, const std::vector<bool>& allP
 	return rightEmpty || leftEmpty || topEmpty || bottomEmpty;
 }
 
-// bool isPointInContour(size_t width, size_t height,
-// 					  const std::vector<bool>& allPoints,
-// 					  const Point& point) {
-// 	int x = static_cast<int>(point.x);
-// 	int y = static_cast<int>(point.y);
-//
-// 	// Сначала проверяем границы
-// 	if (x < 0 || x >= static_cast<int>(width) ||
-// 		y < 0 || y >= static_cast<int>(height)) {
-// 		return false;
-// 		}
-//
-// 	if (!allPoints[y * width + x]) {
-// 		return false;
-// 	}
-//
-// 	// Проверяем 4-х соседей (с учётом границ)
-// 	bool leftEmpty  = (x == 0) || !allPoints[y * width + (x - 1)];
-// 	bool rightEmpty = (x == static_cast<int>(width) - 1) || !allPoints[y * width + (x + 1)];
-// 	bool topEmpty   = (y == 0) || !allPoints[(y - 1) * width + x];
-// 	bool bottomEmpty = (y == static_cast<int>(height) - 1) || !allPoints[(y + 1) * width + x];
-//
-// 	return leftEmpty || rightEmpty || topEmpty || bottomEmpty;
-// }
-
 std::vector<Point> findShapeContour(
 	size_t width,
 	size_t height,
@@ -175,21 +150,18 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 				}
 
 				for (auto it = vecContour.begin(); it != vecContour.end(); ++it) {
+					os << *it << " ";
 					setVisitedPoints.insert(*it);
 				}
+				os << "\n";
 
 				Polygon polygon(vecContour);
-				while (polygon.approximateVertices() > 0) {
-
-				}
-				// polygon.approximateVertices();
+				polygon.approximateVertices(0);
+				polygon.approximateVertices(5);
 
 				size_t amountVertices = polygon.getNumberVertices();
+
 				if (amountVertices > 4) {
-					for (Point p : polygon.getVertices()) {
-						os << p << " ";
-					}
-					os << "\n";
 					amountEllipses++;
 				}
 				else if (amountVertices == 4) {

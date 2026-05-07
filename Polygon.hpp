@@ -45,7 +45,7 @@ public:
 
 	size_t getNumberVertices() const;
 
-	size_t approximateVertices();
+	size_t approximateVertices(double accuracy);
 
 	std::vector<Point> getVertices() const;
 

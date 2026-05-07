@@ -8,7 +8,7 @@ size_t Polygon::getNumberVertices() const {
 	return vecPoints_.size();
 }
 
-size_t Polygon::approximateVertices() {
+size_t Polygon::approximateVertices(double accuracy) {
 	if (vecPoints_.size() < 3) return 0;
 
 	std::vector<Point> vecSimplifiedVertices;
@@ -21,7 +21,7 @@ size_t Polygon::approximateVertices() {
 		const Point& curr = vecPoints_[i];
 		const Point& next = vecPoints_[(i + 1) % n];
 
-		if (!prev.isOnStraightLineWith(curr, next)) {
+		if (!prev.isOnStraightLineWith(curr, next, accuracy)) {
 			vecSimplifiedVertices.push_back(curr);
 		}
 	}
@@ -32,6 +32,7 @@ size_t Polygon::approximateVertices() {
 	}
 
 	size_t amountRemovedVertices = vecPoints_.size() - vecSimplifiedVertices.size();
+	std::cout << "Amount removed vertices = " << amountRemovedVertices << "\n";
 	// std::move() позволяет избежать лишнее перекопирование из vecSimplifiedVertices в vecPoints - вместо
 	// этого сработает оператор перемещающего присваивания.
 	vecPoints_ = std::move(vecSimplifiedVertices);
