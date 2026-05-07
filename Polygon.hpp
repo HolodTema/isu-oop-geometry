@@ -47,7 +47,6 @@ public:
 
 	size_t approximateVertices(double accuracy);
 
-
 	size_t approximateVerticesRDP(double accuracy);
 
 	std::vector<Point> getVertices() const;

@@ -1,0 +1,4 @@
+Rectangles = 6
+Triangles = 8
+Ellipses = 0
+Circles = 11

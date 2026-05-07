@@ -48,20 +48,25 @@ void testPolygonFromFile() {
 		std::cout << "Polygon area = " << polygon.calcArea() << "\n";
 	}
 	else {
-		std::cout << "Error: std::istream object set badbit or failbit during reading Polygon.\n";
+		std::cout << "Error: std::istream object became fail() or bad() during reading Polygon.\n";
 	}
 }
 
 int main() {
-	// testPolygonFromFile();
-	// testPolygon();
-
-	std::ifstream ifs("./assets/input1.dat");
+	std::ifstream ifs("./assets/input3.dat");
 	if (!ifs.is_open()) {
-		std::cout << "Error: no file input1.dat.\n";
+		std::cout << "Error: input file does not exist.\n";
 		return 1;
 	}
 
-	recognizeShapes(ifs, std::cout, 200, 200);
+	std::ofstream ofs("./assets/out.txt");
+	if (!ofs.is_open()) {
+		std::cout << "Error: unable to create output file.\n";
+		return 1;
+	}
+
+	recognizeShapes(ifs, ofs, 200, 200, false);
+
+	ofs.close();
 	return 0;
 }

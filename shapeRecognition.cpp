@@ -1,5 +1,7 @@
 #include "shapeRecognition.hpp"
 #include <unordered_set>
+#include "Circle.hpp"
+#include "Ellipse.hpp"
 #include "Polygon.hpp"
 #include "Rectangle.hpp"
 #include "Triangle.hpp"
@@ -14,11 +16,23 @@ bool isPointInContour(size_t width, size_t height, const std::vector<bool>& allP
 	if (!allPoints[y * width + x]) {
 		return false;
 	}
-	bool rightEmpty = (x - 1 < 0) || !allPoints[y * width + x - 1];
-	bool leftEmpty = (x + 1 >= width) || !allPoints[y * width + x + 1];
+
+	bool leftEmpty = (x - 1 < 0) || !allPoints[y * width + x - 1];
+	bool rightEmpty = (x + 1 >= width) || !allPoints[y * width + x + 1];
 	bool topEmpty = (y - 1 < 0) || !allPoints[(y - 1) * width + x];
 	bool bottomEmpty = (y + 1 >= height) || !allPoints[(y + 1) * width + x];
-	return rightEmpty || leftEmpty || topEmpty || bottomEmpty;
+
+	if (!rightEmpty && !leftEmpty && !topEmpty && !bottomEmpty) {
+		return false;
+	}
+
+	bool topLeftEmpty = ((x - 1 < 0) && (y - 1 < 0)) || !allPoints[(y - 1) * width + x - 1];
+	bool topRightEmpty = ((x + 1 >= width) && (y - 1 < 0)) || !allPoints[(y - 1) * width + x + 1];
+	bool bottomLeftEmpty = ((x - 1 < 0) && (y + 1 >= height)) || !allPoints[(y + 1) * width + x - 1];
+	bool bottomRightEmpty = ((x + 1 >= width) && (y + 1 >= height)) || !allPoints[(y + 1) * width + x + 1];
+
+	return (!topLeftEmpty && !topEmpty) || (!topRightEmpty && !topEmpty) || (!rightEmpty && !topRightEmpty) || (!rightEmpty && !bottomRightEmpty)
+		|| (!bottomEmpty && !bottomRightEmpty) || (!bottomEmpty && !bottomLeftEmpty) || (!leftEmpty && !bottomLeftEmpty) || (!leftEmpty && !topLeftEmpty);
 }
 
 std::vector<Point> findShapeContour(
@@ -118,10 +132,11 @@ std::vector<Point> findShapeContour(
 	return vecContour;
 }
 
-void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t height) {
+void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t height, bool debugMode) {
 	size_t amountRectangles = 0;
 	size_t amountTriangles = 0;
 	size_t amountEllipses = 0;
+	size_t amountCircles = 0;
 
 	std::vector<bool> allPoints;
 	allPoints.resize(width * height);
@@ -136,6 +151,10 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 	if (i != width * height) {
 		os << "Error: invalid width or height - not all the data was read.\n";
 		return;
+	}
+
+	if (debugMode) {
+		os << "Field was read.\nStart recognizing.\n";
 	}
 
 	std::unordered_set<Point, PointHash> setVisitedPoints;
@@ -154,16 +173,67 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 				}
 
 				Polygon polygon(vecContour);
-				os << polygon.approximateVerticesRDP(1) << "\n";
+				polygon.approximateVerticesRDP(1);
 				size_t amountVertices = polygon.getNumberVertices();
 
-				for (Point p : polygon.getVertices()) {
-					os << p << " ";
-				}
-				os << "\n\n";
-
 				if (amountVertices > 4) {
-					amountEllipses++;
+					std::vector<Point> vecVertices = polygon.getVertices();
+
+					double xMax = -1;
+					double xMin = width;
+					double yMax = -1;
+					double yMin = height;
+					for (auto it = vecVertices.begin(); it != vecVertices.end(); ++it) {
+						double x = (*it).x;
+						double y = (*it).y;
+						if (x > xMax) {
+							xMax = x;
+						}
+						if (x < xMin) {
+							xMin = x;
+						}
+						if (y > yMax) {
+							yMax = y;
+						}
+						if (y < yMin) {
+							yMin = y;
+						}
+					}
+					double horizontalSemiAxis = (xMax - xMin) / 2;
+					double verticalSemiAxis = (yMax - yMin) / 2;
+					double xCenter = (xMin + xMax) / 2;
+					double yCenter = (yMin + yMax) / 2;
+					if (horizontalSemiAxis > 3 && verticalSemiAxis > 3) {
+						if (horizontalSemiAxis == verticalSemiAxis) {
+							Point pointCenter = Point(xCenter, yCenter);
+							Circle circle(pointCenter, horizontalSemiAxis);
+							amountCircles++;
+							if (debugMode) {
+								os << "Recognized circle: center = " << pointCenter << "\n";
+								os << "radius = " << horizontalSemiAxis << "\n";
+								os << "vertices: ";
+								for (Point p : vecVertices) {
+									os << p << " ";
+								}
+								os << "\n\n";
+							}
+						}
+						else {
+							Point pointCenter = Point(xCenter, yCenter);
+							Ellipse ellipse(pointCenter, horizontalSemiAxis, verticalSemiAxis);
+							amountEllipses++;
+							if (debugMode) {
+								os << "Recognized ellipse: center = " << pointCenter << "\n";
+								os << "horizontal semi-axis = " << horizontalSemiAxis << "\n";
+								os << "vertical semi-axis = " << verticalSemiAxis << "\n";
+								os << "vertices: ";
+								for (Point p : vecVertices) {
+									os << p << " ";
+								}
+								os << "\n\n";
+							}
+						}
+					}
 				}
 				else if (amountVertices == 4) {
 					// надо отсеять прямоугольники, высота или ширина которых = 2.
@@ -176,26 +246,41 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 					if (isOrtogonalEdge01 && isOrtogonalEdge12 && isOrtogonalEdge23 && isOrtogonalEdge30) {
 						Rectangle rectangle(rectVertices[0], rectVertices[2]);
 						if (rectangle.getHeight() > 2 && rectangle.getWidth() > 2) {
-							os << "Rectangle:\n";
-							for (Point p : rectVertices) {
-								os << p << " ";
-							}
-							os << "\n\n";
 							amountRectangles++;
+							if (debugMode) {
+								os << "Recognized rectangle:\n";
+								os << "width = " << rectangle.getWidth() << "\n";
+								os << "height = " << rectangle.getHeight() << "\n";
+								os << "vertices: ";
+								for (Point p : rectVertices) {
+									os << p << " ";
+								}
+								os << "\n\n";
+							}
 						}
 					}
 				}
 				else if (amountVertices == 3) {
 					std::vector<Point> triangleVertices = polygon.getVertices();
 					Triangle triangle(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
-					if (triangle.getFirstEdgeLen() >= 6 && triangle.getSecondEdgeLen() >= 6 && triangle.getThirdEdgeLen() >= 6) {
+					if (triangle.getFirstEdgeLen() >= 3 && triangle.getSecondEdgeLen() >= 3 && triangle.getThirdEdgeLen() >= 3) {
 						amountTriangles++;
+						if (debugMode) {
+							os << "Recognized triangle:\n";
+							os << "edge length: " << triangle.getFirstEdgeLen() << " " << triangle.getSecondEdgeLen() << " " << triangle.getThirdEdgeLen() << "\n";
+							os << "vertices: ";
+							for (Point p : triangleVertices) {
+								os << p << " ";
+							}
+							os << "\n\n";
+						}
 					}
 				}
 			}
 		}
 	}
-	os << "Ellipses = " << amountEllipses << "\n";
 	os << "Rectangles = " << amountRectangles << "\n";
 	os << "Triangles = " << amountTriangles << "\n";
+	os << "Ellipses = " << amountEllipses << "\n";
+	os << "Circles = " << amountCircles << "\n";
 }

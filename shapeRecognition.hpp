@@ -14,6 +14,6 @@ std::vector<Point> findShapeContour(
 	const Point& startPoint
 );
 
-void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t height);
+void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t height, bool debugMode);
 
 #endif
