@@ -38,6 +38,10 @@ size_t Polygon::approximateVertices() {
 	return amountRemovedVertices;
 }
 
+std::vector<Point> Polygon::getVertices() const {
+	return vecPoints_;
+}
+
 double Polygon::calcArea() const {
 	auto it = vecPoints_.begin();
 	if (it == vecPoints_.end()) {

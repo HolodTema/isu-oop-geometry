@@ -47,6 +47,8 @@ public:
 
 	size_t approximateVertices();
 
+	std::vector<Point> getVertices() const;
+
 	double calcArea() const override;
 
 	double calcPerimeter() const override;

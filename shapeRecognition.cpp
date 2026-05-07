@@ -1,48 +1,50 @@
 #include "shapeRecognition.hpp"
 #include <unordered_set>
 #include "Polygon.hpp"
+#include "Rectangle.hpp"
+#include "Triangle.hpp"
 
-// bool isPointInContour(size_t width, size_t height, const std::vector<bool>& allPoints, const Point& point) {
-// 	int x = static_cast<int>(point.x);
-// 	int y = static_cast<int>(point.y);
-//
-// 	if (x < 0 || x >= width || y < 0 || y >= height) {
-// 		return false;
-// 	}
-// 	if (!allPoints[y * width + x]) {
-// 		return false;
-// 	}
-// 	bool rightEmpty = (x - 1 < 0) || !allPoints[y * width + x - 1];
-// 	bool leftEmpty = (x + 1 >= width) || !allPoints[y * width + x + 1];
-// 	bool topEmpty = (y - 1 < 0) || !allPoints[(y - 1) * width + x];
-// 	bool bottomEmpty = (y + 1 >= height) || !allPoints[(y + 1) * width + x];
-// 	return rightEmpty || leftEmpty || topEmpty || bottomEmpty;
-// }
-
-bool isPointInContour(size_t width, size_t height,
-					  const std::vector<bool>& allPoints,
-					  const Point& point) {
+bool isPointInContour(size_t width, size_t height, const std::vector<bool>& allPoints, const Point& point) {
 	int x = static_cast<int>(point.x);
 	int y = static_cast<int>(point.y);
 
-	// Сначала проверяем границы
-	if (x < 0 || x >= static_cast<int>(width) ||
-		y < 0 || y >= static_cast<int>(height)) {
+	if (x < 0 || x >= width || y < 0 || y >= height) {
 		return false;
-		}
-
+	}
 	if (!allPoints[y * width + x]) {
 		return false;
 	}
-
-	// Проверяем 4-х соседей (с учётом границ)
-	bool leftEmpty  = (x == 0) || !allPoints[y * width + (x - 1)];
-	bool rightEmpty = (x == static_cast<int>(width) - 1) || !allPoints[y * width + (x + 1)];
-	bool topEmpty   = (y == 0) || !allPoints[(y - 1) * width + x];
-	bool bottomEmpty = (y == static_cast<int>(height) - 1) || !allPoints[(y + 1) * width + x];
-
-	return leftEmpty || rightEmpty || topEmpty || bottomEmpty;
+	bool rightEmpty = (x - 1 < 0) || !allPoints[y * width + x - 1];
+	bool leftEmpty = (x + 1 >= width) || !allPoints[y * width + x + 1];
+	bool topEmpty = (y - 1 < 0) || !allPoints[(y - 1) * width + x];
+	bool bottomEmpty = (y + 1 >= height) || !allPoints[(y + 1) * width + x];
+	return rightEmpty || leftEmpty || topEmpty || bottomEmpty;
 }
+
+// bool isPointInContour(size_t width, size_t height,
+// 					  const std::vector<bool>& allPoints,
+// 					  const Point& point) {
+// 	int x = static_cast<int>(point.x);
+// 	int y = static_cast<int>(point.y);
+//
+// 	// Сначала проверяем границы
+// 	if (x < 0 || x >= static_cast<int>(width) ||
+// 		y < 0 || y >= static_cast<int>(height)) {
+// 		return false;
+// 		}
+//
+// 	if (!allPoints[y * width + x]) {
+// 		return false;
+// 	}
+//
+// 	// Проверяем 4-х соседей (с учётом границ)
+// 	bool leftEmpty  = (x == 0) || !allPoints[y * width + (x - 1)];
+// 	bool rightEmpty = (x == static_cast<int>(width) - 1) || !allPoints[y * width + (x + 1)];
+// 	bool topEmpty   = (y == 0) || !allPoints[(y - 1) * width + x];
+// 	bool bottomEmpty = (y == static_cast<int>(height) - 1) || !allPoints[(y + 1) * width + x];
+//
+// 	return leftEmpty || rightEmpty || topEmpty || bottomEmpty;
+// }
 
 std::vector<Point> findShapeContour(
 	size_t width,
@@ -58,8 +60,8 @@ std::vector<Point> findShapeContour(
 
 	// 8 направлений по индексам. Начиная от right, заканчивая topRight
 	// то есть по часовой стрелке.
-	int xDirections[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-	int yDirections[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+	int xDirections[8] = {1, 1, 0, -1, -1, -1,  0,  1};
+	int yDirections[8] = {0, 1, 1,  1,  0, -1, -1, -1};
 
 	int currX = static_cast<int>(pointStart.x);
 	int currY = static_cast<int>(pointStart.y);
@@ -88,19 +90,27 @@ std::vector<Point> findShapeContour(
 	currX += xDirections[firstClockwiseDir];
 	currY += yDirections[firstClockwiseDir];
 
-	// prevDirection - направление, чтобы вернуться в предыдущую точку.
-	int prevDirection = (firstClockwiseDir + 4) % 8;
+	// prevDirection - какое направление было в прошлый раз
+	int prevDirection = firstClockwiseDir;
+	// directionToBackToPrevPoint - направление, чтобы вернуться в предыдущую точку.
+	int directionToBackToPrevPoint = (firstClockwiseDir + 4) % 8;
 
 	// итерируемся, пока не вернулись в начальную точку (пока не замкнули контур)
+	// при этом помехи (линии небольшой толщины и тд) могут поломать алгоритм жука,
+	// поэтому ставится ограничение итераций
+	const size_t MAX_ITERATIONS = width*height;
+	size_t amountIterations = 0;
 	while (currX != pointStart.x || currY != pointStart.y) {
+		if (amountIterations > MAX_ITERATIONS) {
+			return std::vector<Point>();
+		}
 		vecContour.push_back(Point(currX, currY));
 
 		// ищем следующую контурную точку по часовой стрелке от предыдущего направления
 		int nextDirection = -1;
 		for (int i = 0; i < 8; ++i) {
 			int dir = (prevDirection + 7 + i) % 8;
-			if (dir == prevDirection) {
-				// нам нет смысла возвращаться назад в предыдущую контурную точку - мы ее уже учли.
+			if (dir == directionToBackToPrevPoint) {
 				continue;
 			}
 			int x = currX + xDirections[dir];
@@ -119,7 +129,15 @@ std::vector<Point> findShapeContour(
 		// переходим к новой найденной точке, снова запоминаем направление к предыдущей точке
 		currX += xDirections[nextDirection];
 		currY += yDirections[nextDirection];
-		prevDirection = (nextDirection + 4) % 8;
+		prevDirection = nextDirection;
+		directionToBackToPrevPoint = (nextDirection + 4) % 8;
+		amountIterations++;
+	}
+
+	// стартовая точка может быть продублирована в начале и в конце вектоа
+	// удаляем возможный дубликат
+	if (!vecContour.empty() && vecContour.back() == pointStart) {
+		vecContour.pop_back();
 	}
 
 	return vecContour;
@@ -150,7 +168,6 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 	for (size_t y = 0; y < height; ++y) {
 		for (size_t x = 0; x < width; ++x) {
 			Point point(x, y);
-			os << point << " ";
 			if (isPointInContour(width, height, allPoints, point) && setVisitedPoints.find(point) == setVisitedPoints.end()) {
 				std::vector<Point> vecContour = findShapeContour(width, height, allPoints, point);
 				if (vecContour.size() < 3) {
@@ -162,17 +179,34 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 				}
 
 				Polygon polygon(vecContour);
-				polygon.approximateVertices();
-				size_t amountVertices = polygon.getNumberVertices();
+				while (polygon.approximateVertices() > 0) {
 
+				}
+				// polygon.approximateVertices();
+
+				size_t amountVertices = polygon.getNumberVertices();
 				if (amountVertices > 4) {
+					for (Point p : polygon.getVertices()) {
+						os << p << " ";
+					}
+					os << "\n";
 					amountEllipses++;
 				}
 				else if (amountVertices == 4) {
-					amountRectangles++;
+					// надо отсеять прямоугольники, высота или ширина которых = 2.
+					// так как они являются частью линий-помех толщиной 1-2
+					std::vector<Point> rectVertices = polygon.getVertices();
+					Rectangle rectangle(rectVertices[0], rectVertices[2]);
+					if (rectangle.getHeight() > 2 && rectangle.getWidth() > 2) {
+						amountRectangles++;
+					}
 				}
 				else if (amountVertices == 3) {
-					amountTriangles++;
+					std::vector<Point> triangleVertices = polygon.getVertices();
+					Triangle triangle(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
+					if (triangle.getFirstEdgeLen() >= 3 && triangle.getSecondEdgeLen() >= 3 && triangle.getThirdEdgeLen() >= 3) {
+						amountTriangles++;
+					}
 				}
 			}
 		}

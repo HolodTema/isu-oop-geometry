@@ -1,11 +1,11 @@
 #include "Rectangle.hpp"
 
 double Rectangle::getWidth() const {
-	return bottomRightPoint_.x - topLeftPoint_.x;
+	return bottomRightPoint_.x - topLeftPoint_.x + 1;
 }
 
 double Rectangle::getHeight() const {
-	return bottomRightPoint_.y - topLeftPoint_.y;
+	return bottomRightPoint_.y - topLeftPoint_.y + 1;
 }
 
 Point Rectangle::getTopLeftPoint() const {
