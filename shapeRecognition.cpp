@@ -150,16 +150,17 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 				}
 
 				for (auto it = vecContour.begin(); it != vecContour.end(); ++it) {
-					os << *it << " ";
 					setVisitedPoints.insert(*it);
 				}
-				os << "\n";
 
 				Polygon polygon(vecContour);
-				polygon.approximateVertices(0);
-				polygon.approximateVertices(5);
-
+				os << polygon.approximateVerticesRDP(1) << "\n";
 				size_t amountVertices = polygon.getNumberVertices();
+
+				for (Point p : polygon.getVertices()) {
+					os << p << " ";
+				}
+				os << "\n\n";
 
 				if (amountVertices > 4) {
 					amountEllipses++;
@@ -168,15 +169,26 @@ void recognizeShapes(std::istream &is, std::ostream &os, size_t width, size_t he
 					// надо отсеять прямоугольники, высота или ширина которых = 2.
 					// так как они являются частью линий-помех толщиной 1-2
 					std::vector<Point> rectVertices = polygon.getVertices();
-					Rectangle rectangle(rectVertices[0], rectVertices[2]);
-					if (rectangle.getHeight() > 2 && rectangle.getWidth() > 2) {
-						amountRectangles++;
+					bool isOrtogonalEdge01 = rectVertices[0].x == rectVertices[1].x || rectVertices[0].y == rectVertices[1].y;
+					bool isOrtogonalEdge12 = rectVertices[1].x == rectVertices[2].x || rectVertices[1].y == rectVertices[2].y;
+					bool isOrtogonalEdge23 = rectVertices[2].x == rectVertices[3].x || rectVertices[2].y == rectVertices[3].y;
+					bool isOrtogonalEdge30 = rectVertices[3].x == rectVertices[0].x || rectVertices[3].y == rectVertices[0].y;
+					if (isOrtogonalEdge01 && isOrtogonalEdge12 && isOrtogonalEdge23 && isOrtogonalEdge30) {
+						Rectangle rectangle(rectVertices[0], rectVertices[2]);
+						if (rectangle.getHeight() > 2 && rectangle.getWidth() > 2) {
+							os << "Rectangle:\n";
+							for (Point p : rectVertices) {
+								os << p << " ";
+							}
+							os << "\n\n";
+							amountRectangles++;
+						}
 					}
 				}
 				else if (amountVertices == 3) {
 					std::vector<Point> triangleVertices = polygon.getVertices();
 					Triangle triangle(triangleVertices[0], triangleVertices[1], triangleVertices[2]);
-					if (triangle.getFirstEdgeLen() >= 3 && triangle.getSecondEdgeLen() >= 3 && triangle.getThirdEdgeLen() >= 3) {
+					if (triangle.getFirstEdgeLen() >= 6 && triangle.getSecondEdgeLen() >= 6 && triangle.getThirdEdgeLen() >= 6) {
 						amountTriangles++;
 					}
 				}

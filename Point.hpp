@@ -17,6 +17,8 @@ struct Point {
 
 	double distanceTo(const Point& other) const;
 
+	double distanceToSegment(const Point& point1, const Point& point2) const;
+
 	bool isOnStraightLineWith(const Point& point2, const Point& point3) const;
 
 	bool isOnStraightLineWith(const Point& point2, const Point& point3, double accuracy) const;

@@ -15,7 +15,7 @@ size_t Polygon::approximateVertices(double accuracy) {
 	size_t n = vecPoints_.size();
 
 	for (size_t i = 0; i < n; ++i) {
-		// используем остаток от делелния на длину, чтобы не заморачиваться с outOfBounds
+		// используем остаток от деления на длину, чтобы не заморачиваться с outOfBounds
 		// и чтобы проверять тройки точек в начале и конце вектора.
 		const Point& prev = vecPoints_[(i - 1 + n) % n];
 		const Point& curr = vecPoints_[i];
@@ -32,11 +32,64 @@ size_t Polygon::approximateVertices(double accuracy) {
 	}
 
 	size_t amountRemovedVertices = vecPoints_.size() - vecSimplifiedVertices.size();
-	std::cout << "Amount removed vertices = " << amountRemovedVertices << "\n";
 	// std::move() позволяет избежать лишнее перекопирование из vecSimplifiedVertices в vecPoints - вместо
 	// этого сработает оператор перемещающего присваивания.
 	vecPoints_ = std::move(vecSimplifiedVertices);
 	return amountRemovedVertices;
+}
+
+void Polygon::rdpRecursive(const std::vector<Point>& vecVertices, size_t first, size_t last, double accuracy, std::vector<bool>& vecNeedKeepVertex) {
+	if (last - first <= 1) {
+		return;
+	}
+
+	double maxDistance = -1.0;
+	size_t index = first;
+
+	for (size_t i = first + 1; i < last; ++i) {
+		double distance = vecVertices[i].distanceToSegment(vecVertices[first], vecVertices[last]);
+		if (distance > maxDistance) {
+			maxDistance = distance;
+			index = i;
+		}
+	}
+	if (maxDistance > accuracy) {
+		vecNeedKeepVertex[index] = true;
+		rdpRecursive(vecVertices, first, index, accuracy, vecNeedKeepVertex);
+		rdpRecursive(vecVertices, index, last, accuracy, vecNeedKeepVertex);
+	}
+}
+
+size_t Polygon::approximateVerticesRDP(double accuracy) {
+	// если уже 3 вершины, то апроксимировать нечего
+	if (vecPoints_.size() <= 3) {
+		return 0;
+	}
+
+	std::vector<Point> vecVertices = vecPoints_;
+	// добавляем первую точку контура в конец, чтобы обработать startPoint-endPoint ребро
+	vecVertices.push_back(vecPoints_.front());
+
+	std::vector<bool> vecNeedKeepVertex(vecVertices.size(), false);
+	vecNeedKeepVertex.front() = true;
+	vecNeedKeepVertex.back() = true;
+
+	rdpRecursive(vecVertices, 0, vecVertices.size() - 1, accuracy, vecNeedKeepVertex);
+
+	std::vector<Point> vecResultVertices;
+	for (size_t i = 0; i < vecVertices.size(); ++i) {
+		if (vecNeedKeepVertex[i]) {
+			vecResultVertices.push_back(vecVertices[i]);
+		}
+	}
+
+	// если первая и последняя вершина совпали, удалим дубликат вершины
+	if (vecResultVertices.size() > 1 && vecResultVertices.front() == vecResultVertices.back()) {
+		vecResultVertices.pop_back();
+	}
+	size_t amountDeletedVertices = vecPoints_.size() - vecResultVertices.size();
+	vecPoints_ = std::move(vecResultVertices);
+	return amountDeletedVertices;
 }
 
 std::vector<Point> Polygon::getVertices() const {

@@ -47,6 +47,9 @@ public:
 
 	size_t approximateVertices(double accuracy);
 
+
+	size_t approximateVerticesRDP(double accuracy);
+
 	std::vector<Point> getVertices() const;
 
 	double calcArea() const override;
@@ -58,6 +61,7 @@ public:
 private:
 	std::vector<Point> vecPoints_;
 
+	void rdpRecursive(const std::vector<Point>& vecVertices, size_t first, size_t last, double accuracy, std::vector<bool>& vecNeedKeepVertex);
 };
 
 #endif
