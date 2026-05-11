@@ -53,6 +53,8 @@ void testPolygonFromFile() {
 }
 
 int main() {
+	testPolygon();
+
 	std::ifstream ifs("./assets/input3.dat");
 	if (!ifs.is_open()) {
 		std::cout << "Error: input file does not exist.\n";

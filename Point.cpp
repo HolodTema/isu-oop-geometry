@@ -9,24 +9,6 @@ double Point::distanceTo(const Point& other) const {
 	return std::sqrt(distanceX * distanceX + distanceY * distanceY);
 }
 
-// double Point::distanceToSegment(const Point& point1, const Point& point2) const {
-// 	//point1 и point2 точки отрезка
-// 	// находим коэффициенты общего уравнения прямой
-// 	// Ax + By + C = 0
-// 	double a = point2.y - point1.y;
-// 	double b = point1.x - point2.x;
-// 	double c = point2.x * point1.y - point1.x * point2.y;
-//
-// 	// по формуле расстояния от точки до прямой:
-// 	double numerator = a * x + b * y + c;
-// 	if (numerator < 0) {
-// 		numerator *= -1;
-// 	}
-//
-// 	double denominator = std::sqrt(a * a + b * b);
-// 	return numerator / denominator;
-// }
-
 double Point::distanceToSegment(const Point& point1, const Point& point2) const {
 	// вектор из отрезка
 	double aX = point2.x - point1.x;
