@@ -27,39 +27,47 @@ double Point::distanceTo(const Point& other) const {
 // 	return numerator / denominator;
 // }
 
-double Point::distanceToSegment(const Point& p1, const Point& p2) const {
-	// Вектор отрезка
-	double ax = p2.x - p1.x;
-	double ay = p2.y - p1.y;
-	double len2 = ax*ax + ay*ay;
-	if (len2 < 1e-12) {
-		// Отрезок вырожден в точку
-		double dx = x - p1.x;
-		double dy = y - p1.y;
-		return std::sqrt(dx*dx + dy*dy);
+double Point::distanceToSegment(const Point& point1, const Point& point2) const {
+	// вектор из отрезка
+	double aX = point2.x - point1.x;
+	double aY = point2.y - point1.y;
+	double aLen = std::sqrt(aX * aX + aY * aY);
+	if (aLen < 1) {
+		// если отрезок является точкой, то считаем расстояние до точки.
+		return distanceTo(point1);
 	}
 
-	// Проекция точки на прямую: t = ((p - p1)·(p2-p1)) / |p2-p1|^2
-	double t = ((x - p1.x)*ax + (y - p1.y)*ay) / len2;
+    // вектор от одного из концов отрезка до точки вне отрезка
+    double pX = x - point1.x;
+    double pY = y - point1.y;
+    double pLen = std::sqrt(pX * pX + pY * pY);
 
-	if (t <= 0.0) {
-		// Проекция за p1
-		double dx = x - p1.x;
-		double dy = y - p1.y;
-		return std::sqrt(dx*dx + dy*dy);
-	} else if (t >= 1.0) {
-		// Проекция за p2
-		double dx = x - p2.x;
-		double dy = y - p2.y;
-		return std::sqrt(dx*dx + dy*dy);
-	} else {
-		// Проекция внутри отрезка: расстояние до прямой
-		double projx = p1.x + t*ax;
-		double projy = p1.y + t*ay;
-		double dx = x - projx;
-		double dy = y - projy;
-		return std::sqrt(dx*dx + dy*dy);
-	}
+    // косинус находится исходя из скалярного произведения векторов
+    double cos = (pX * aX + pY * aY) / (pLen * aLen);
+
+    if (cos < 0) {
+        double distance1 = distanceTo(point1);
+        double distance2 = distanceTo(point2);
+        if (distance1 < distance2) {
+            return distance1;
+        }
+        return distance2;
+    }
+
+    // находим коэффициенты общего уравнения прямой
+ 	// Ax + By + C = 0
+ 	double a = point2.y - point1.y;
+ 	double b = point1.x - point2.x;
+ 	double c = point2.x * point1.y - point1.x * point2.y;
+
+ 	// по формуле расстояния от точки до прямой:
+ 	double numerator = a * x + b * y + c;
+ 	if (numerator < 0) {
+ 		numerator *= -1;
+ 	}
+
+ 	double denominator = std::sqrt(a * a + b * b);
+ 	return numerator / denominator;
 }
 
 bool Point::isOnStraightLineWith(const Point& point2, const Point& point3) const {
@@ -103,5 +111,10 @@ size_t PointHash::operator()(const Point& point) const {
 	size_t hashX = std::hash<double>{}(point.x);
 	size_t hashY = std::hash<double>{}(point.y);
 	return hashX ^ (hashY * 0x9e3779b9 + (hashX << 6) + (hashX >> 2));
+    // хеширование выше лучше, чем хеширование в комментарии, ибо меньше коллизий.
+    // 0x9e3779b9 - число Фи - золотое сечение
+    // сдвиги на 6 и на 2 влево и вправо подобраны просто так, их можно поменять.
+    //
+    // но если делать такое хеширование, то тоже все будет работать, просто будет немного больше коллизий
 	// return hashX ^ (hashY << 1);
 }

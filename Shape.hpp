@@ -3,7 +3,7 @@
 
 #include <string>
 
-class Shape {
+    class Shape {
 public:
 
 	virtual ~Shape() {
